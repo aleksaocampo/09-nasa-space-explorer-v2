@@ -14,7 +14,15 @@ const modalExplanation = document.getElementById('modalExplanation');
 
 // Helper: clear gallery and show a loading state
 function showLoading() {
-	gallery.innerHTML = '<div class="placeholder">Fetching images…</div>';
+	// Insert spinner + loading text
+	gallery.innerHTML = `
+		<div class="placeholder" role="status" aria-live="polite">
+			<div class="spinner" aria-hidden="true"></div>
+			<p>Fetching images…</p>
+		</div>
+	`;
+	// Mark the gallery as busy for accessibility
+	gallery.setAttribute('aria-busy', 'true');
 }
 
 // Helper: open modal with provided data
@@ -70,7 +78,15 @@ function buildGallery(items) {
 
 // Fetch data from the APOD JSON and render gallery
 async function fetchAndShow() {
+	// Save original button text so we can restore it
+	const originalBtnText = getImageBtn.textContent;
+	// minimum spinner time (ms) to make spinner visible even on fast networks
+	const MIN_LOADING_MS = 1200;
+	const start = Date.now();
 	try {
+		// Show loading state and disable the button to prevent duplicate clicks
+		getImageBtn.disabled = true;
+		getImageBtn.textContent = 'Loading…';
 		showLoading();
 		const res = await fetch(apodData);
 		if (!res.ok) throw new Error('Network response was not ok');
@@ -82,6 +98,15 @@ async function fetchAndShow() {
 	} catch (err) {
 		gallery.innerHTML = `<div class="placeholder">Error loading images: ${err.message}</div>`;
 		console.error('Fetch error:', err);
+	} finally {
+		// Ensure minimum spinner time so it doesn't flash too quickly
+		const elapsed = Date.now() - start;
+		const remaining = MIN_LOADING_MS - elapsed;
+		if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
+		// Restore button state and clear busy indicator
+		getImageBtn.disabled = false;
+		getImageBtn.textContent = originalBtnText || 'Fetch Space Images';
+		gallery.removeAttribute('aria-busy');
 	}
 }
 
