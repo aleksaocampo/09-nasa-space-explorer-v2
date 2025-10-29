@@ -87,6 +87,40 @@ button:hover {
   }
 }
 
+/* Random fact area styles */
+.fact-area {
+  margin: 12px 20px 0 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+.random-fact-btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #5b616b;
+  color: #f1f1f1;
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+}
+.random-fact-btn:hover { background: #7a838b; }
+.fact-container {
+  min-height: 40px;
+  max-width: 680px;
+  padding: 8px 12px;
+  color: #f1f1f1;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 280ms ease, transform 280ms ease;
+}
+.fact-container.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Gallery flex container */
 .gallery {
   display: flex;

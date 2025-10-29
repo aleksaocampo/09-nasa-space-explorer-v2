@@ -14,6 +14,8 @@ const modalExplanation = document.getElementById('modalExplanation');
 const startDateInput = document.getElementById('startDate');
 const endDateInput = document.getElementById('endDate');
 const filterBtn = document.getElementById('filterBtn');
+const randomFactBtn = document.getElementById('randomFactBtn');
+const factContainer = document.getElementById('factContainer');
 
 // Cache the last fetched items so we can filter client-side without refetching
 let lastFetchedItems = null;
@@ -90,6 +92,32 @@ async function transitionToGallery(items) {
 		await new Promise(r => setTimeout(r, 380));
 	}
 	buildGallery(items);
+}
+
+// Random space facts (small curated list)
+const spaceFacts = [
+	"A day on Venus is longer than a year on Venus.",
+	"Neutron stars can spin 600 times per second.",
+	"Space is not completely empty — it contains tiny amounts of gas, dust, and radiation.",
+	"The footprints on the Moon will likely stay there for millions of years.",
+	"A teaspoon of a neutron star would weigh about 6 billion tons.",
+	"Jupiter's magnetic field is 14 times stronger than Earth's.",
+	"There are more stars in the observable universe than grains of sand on Earth.",
+	"Saturn could float in water (if you had a bathtub big enough).",
+	"The Sun makes up 99.86% of the mass in our solar system.",
+	"Light from the Sun takes about 8 minutes and 20 seconds to reach Earth."
+];
+
+function showRandomFact() {
+	if (!factContainer) return;
+	const idx = Math.floor(Math.random() * spaceFacts.length);
+	// briefly remove class to restart animation
+	factContainer.classList.remove('show');
+	// small timeout to allow reflow
+	setTimeout(() => {
+		factContainer.textContent = spaceFacts[idx];
+		factContainer.classList.add('show');
+	}, 40);
 }
 
 // Filter handler: uses lastFetchedItems to filter by date range
@@ -196,6 +224,8 @@ filterBtn.addEventListener('click', applyFilter);
 // Allow pressing Enter in the date inputs to apply the filter
 startDateInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilter(); });
 endDateInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilter(); });
+// Wire up random fact button
+if (randomFactBtn) randomFactBtn.addEventListener('click', showRandomFact);
 modalOverlay.addEventListener('click', closeModal);
 modalClose.addEventListener('click', closeModal);
 window.addEventListener('keydown', (e) => {
