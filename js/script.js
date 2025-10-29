@@ -11,6 +11,12 @@ const modalImage = document.getElementById('modalImage');
 const modalTitle = document.getElementById('modalTitle');
 const modalDate = document.getElementById('modalDate');
 const modalExplanation = document.getElementById('modalExplanation');
+const startDateInput = document.getElementById('startDate');
+const endDateInput = document.getElementById('endDate');
+const filterBtn = document.getElementById('filterBtn');
+
+// Cache the last fetched items so we can filter client-side without refetching
+let lastFetchedItems = null;
 
 // Helper: clear gallery and show a loading state
 function showLoading() {
@@ -76,6 +82,57 @@ function buildGallery(items) {
 	});
 }
 
+// Helper: fade current gallery then render new items
+async function transitionToGallery(items) {
+	const placeholder = gallery.querySelector('.placeholder');
+	if (placeholder) {
+		placeholder.classList.add('fade-out');
+		await new Promise(r => setTimeout(r, 380));
+	}
+	buildGallery(items);
+}
+
+// Filter handler: uses lastFetchedItems to filter by date range
+function applyFilter() {
+	if (!lastFetchedItems) {
+		gallery.innerHTML = '<div class="placeholder">No data loaded. Click "Fetch Space Images" first.</div>';
+		return;
+	}
+
+	const startVal = startDateInput.value;
+	const endVal = endDateInput.value;
+
+	if (!startVal && !endVal) {
+		// No filter; show all
+		transitionToGallery(lastFetchedItems.filter(it => it.media_type === 'image'));
+		return;
+	}
+
+	// Parse dates; APOD dates are in YYYY-MM-DD format
+	let start = startVal ? new Date(startVal) : null;
+	let end = endVal ? new Date(endVal) : null;
+
+	if (start && end && start > end) {
+		// Swap so range makes sense
+		[start, end] = [end, start];
+	}
+
+	const filtered = lastFetchedItems.filter(it => {
+		if (it.media_type !== 'image') return false;
+		const d = new Date(it.date);
+		if (start && d < start) return false;
+		if (end && d > end) return false;
+		return true;
+	});
+
+	if (!filtered.length) {
+		gallery.innerHTML = '<div class="placeholder">No images match that date range.</div>';
+		return;
+	}
+
+	transitionToGallery(filtered);
+}
+
 // Fetch data from the APOD JSON and render gallery
 async function fetchAndShow() {
 	// Save original button text so we can restore it
@@ -94,15 +151,37 @@ async function fetchAndShow() {
 
 		// The JSON is an object with keys — if it's an array, use directly
 		const items = Array.isArray(data) ? data : Object.values(data);
-		buildGallery(items);
-	} catch (err) {
-		gallery.innerHTML = `<div class="placeholder">Error loading images: ${err.message}</div>`;
-		console.error('Fetch error:', err);
-	} finally {
+		// Cache items for client-side filtering
+		lastFetchedItems = items;
+
 		// Ensure minimum spinner time so it doesn't flash too quickly
 		const elapsed = Date.now() - start;
 		const remaining = MIN_LOADING_MS - elapsed;
 		if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
+
+		// Fade out the placeholder to create a smooth 'scene' change
+		const placeholder = gallery.querySelector('.placeholder');
+		if (placeholder) {
+			placeholder.classList.add('fade-out');
+			// Wait for the CSS fade duration (match 360ms in CSS)
+			await new Promise(r => setTimeout(r, 380));
+		}
+
+		// Now render the gallery scene
+		buildGallery(items);
+	} catch (err) {
+		// If an error occurred, still enforce the minimum spinner time and fade
+		const elapsedErr = Date.now() - start;
+		const remainingErr = MIN_LOADING_MS - elapsedErr;
+		if (remainingErr > 0) await new Promise(r => setTimeout(r, remainingErr));
+		const placeholder = gallery.querySelector('.placeholder');
+		if (placeholder) {
+			placeholder.classList.add('fade-out');
+			await new Promise(r => setTimeout(r, 380));
+		}
+		gallery.innerHTML = `<div class="placeholder">Error loading images: ${err.message}</div>`;
+		console.error('Fetch error:', err);
+	} finally {
 		// Restore button state and clear busy indicator
 		getImageBtn.disabled = false;
 		getImageBtn.textContent = originalBtnText || 'Fetch Space Images';
@@ -112,6 +191,11 @@ async function fetchAndShow() {
 
 // Wire up button and modal interactions
 getImageBtn.addEventListener('click', fetchAndShow);
+// Wire up the filter button to apply the date filter
+filterBtn.addEventListener('click', applyFilter);
+// Allow pressing Enter in the date inputs to apply the filter
+startDateInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilter(); });
+endDateInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilter(); });
 modalOverlay.addEventListener('click', closeModal);
 modalClose.addEventListener('click', closeModal);
 window.addEventListener('keydown', (e) => {

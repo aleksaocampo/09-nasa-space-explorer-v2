@@ -166,6 +166,16 @@ button:hover {
   color: #f1f1f1;
 }
 
+/* Fade out placeholder to transition into the gallery scene */
+.placeholder {
+  transition: opacity 360ms ease, transform 360ms ease;
+}
+.placeholder.fade-out {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
 /* Gallery item hover effect */
 .gallery-item {
   /* transition on transform so hover feels smooth */
